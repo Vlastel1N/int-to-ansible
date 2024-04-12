@@ -1,0 +1,38 @@
+---
+- name: Configure extended ACL for Requirement 1
+  hosts: R2
+  gather_facts: no
+  connection: network_cli
+
+  tasks:
+    - name: Load new ACL into device
+      ios_config:
+        lines:
+          - ip access-list extended REQ1
+              
+    - name: Create rule to deny Telnet traffic
+      ios_config:
+        lines:
+          - deny tcp any any eq telnet
+      register: deny_telnet
+
+    - name: Create rule to permit all IP traffic
+      ios_config:
+        lines:
+          - permit ip any any
+      register: permit_ip
+
+    - name: Apply new ACL to R2 Eth0/1 out
+      ios_config:
+        lines:
+          - ip access-group REQ1 out
+      register: apply_acl
+
+    - name: Check result
+      ios_command:
+        commands: show ip access-lists REQ1
+      register: result
+
+    - name: Print result
+      debug:
+        var: result.stdout_lines
